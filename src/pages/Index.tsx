@@ -1,7 +1,6 @@
 
 import React from 'react';
 import Dashboard from '@/components/Dashboard';
-import { mockReports } from '@/lib/mockData';
 
 const Index = () => {
   return (
@@ -34,7 +33,7 @@ const Index = () => {
       </header>
 
       <main className="container mx-auto">
-        <Dashboard reports={mockReports} />
+        <Dashboard />
       </main>
     </div>
   );
