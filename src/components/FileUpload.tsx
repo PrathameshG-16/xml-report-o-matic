@@ -29,21 +29,31 @@ const FileUpload: React.FC<FileUploadProps> = ({ onReportAdded, className }) => 
   };
   
   const processFile = async (file: File) => {
-    if (!file.name.endsWith('.xml')) {
-      toast.error('Please upload an XML file');
+    // Check file extension
+    const fileExt = file.name.split('.').pop()?.toLowerCase();
+    
+    if (!fileExt || !(fileExt === 'xml' || fileExt === 'html' || fileExt === 'htm')) {
+      toast.error('Please upload an XML or HTML file');
       return;
     }
     
     setIsLoading(true);
     
     try {
-      const xmlContent = await file.text();
-      reportService.saveXmlReport(xmlContent);
+      const fileContent = await file.text();
+      
+      // Process according to file type
+      if (fileExt === 'xml') {
+        reportService.saveXmlReport(fileContent);
+      } else {
+        reportService.saveHtmlReport(fileContent);
+      }
+      
       toast.success('Report uploaded successfully');
       onReportAdded();
     } catch (error) {
       console.error('Error processing file:', error);
-      toast.error('Failed to process XML report');
+      toast.error('Failed to process report file');
     } finally {
       setIsLoading(false);
     }
@@ -83,7 +93,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onReportAdded, className }) => 
           <input
             id="file-upload"
             type="file"
-            accept=".xml"
+            accept=".xml,.html,.htm"
             className="hidden"
             onChange={handleFileChange}
             disabled={isLoading}
@@ -102,9 +112,12 @@ const FileUpload: React.FC<FileUploadProps> = ({ onReportAdded, className }) => 
                 <Upload size={24} className="text-primary" />
               </div>
               <div>
-                <p className="font-medium">Upload XML Report</p>
+                <p className="font-medium">Upload Test Report</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   Drag and drop or click to browse
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Supports XML and HTML formats
                 </p>
               </div>
             </label>

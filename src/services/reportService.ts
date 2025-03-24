@@ -1,6 +1,7 @@
 
 import { TestReport } from '@/types/reportTypes';
 import { parseXmlReport } from '@/utils/xmlParser';
+import { parseHtmlReport } from '@/utils/htmlParser';
 
 const STORAGE_KEY = 'test_reports';
 
@@ -31,6 +32,32 @@ export const reportService = {
     } catch (error) {
       console.error('Error saving XML report:', error);
       throw new Error('Failed to save XML report');
+    }
+  },
+  
+  /**
+   * Save a new report from HTML
+   * @param htmlString HTML report string
+   * @returns The parsed and saved TestReport
+   */
+  saveHtmlReport: (htmlString: string): TestReport => {
+    try {
+      // Parse the HTML report
+      const report = parseHtmlReport(htmlString);
+      
+      // Get existing reports
+      const existingReports = reportService.getAllReports();
+      
+      // Add the new report
+      const updatedReports = [report, ...existingReports];
+      
+      // Save to storage
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedReports));
+      
+      return report;
+    } catch (error) {
+      console.error('Error saving HTML report:', error);
+      throw new Error('Failed to save HTML report');
     }
   },
   

@@ -26,7 +26,7 @@ const Index = () => {
                   <path d="m14 17 2-2-2-2" />
                 </svg>
               </div>
-              <h1 className="text-xl font-semibold">XML Report Visualizer</h1>
+              <h1 className="text-xl font-semibold">Test Report Visualizer</h1>
             </div>
           </div>
         </div>
