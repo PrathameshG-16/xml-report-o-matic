@@ -32,8 +32,8 @@ const FileUpload: React.FC<FileUploadProps> = ({ onReportAdded, className }) => 
     // Check file extension
     const fileExt = file.name.split('.').pop()?.toLowerCase();
     
-    if (!fileExt || fileExt !== 'xml') {
-      toast.error('Please upload an XML file');
+    if (!fileExt || (fileExt !== 'xml' && fileExt !== 'html' && fileExt !== 'htm')) {
+      toast.error('Please upload an XML or HTML file');
       return;
     }
     
@@ -41,7 +41,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onReportAdded, className }) => 
     
     try {
       const fileContent = await file.text();
-      reportService.saveXmlReport(fileContent);
+      reportService.saveReport(fileContent, file.name);
       toast.success('Report uploaded successfully');
       onReportAdded();
     } catch (error) {
@@ -86,7 +86,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onReportAdded, className }) => 
           <input
             id="file-upload"
             type="file"
-            accept=".xml"
+            accept=".xml,.html,.htm"
             className="hidden"
             onChange={handleFileChange}
             disabled={isLoading}
@@ -110,7 +110,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onReportAdded, className }) => 
                   Drag and drop or click to browse
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Supports XML format
+                  Supports XML and HTML formats
                 </p>
               </div>
             </label>
