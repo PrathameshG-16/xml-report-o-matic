@@ -1,3 +1,4 @@
+
 import { TestReport } from '../types/reportTypes';
 import { parseXmlReport } from '../utils/xmlParser';
 import { parseHtmlReport } from '../utils/htmlParser';
@@ -26,6 +27,7 @@ export const reportService = {
       
       // Save to storage
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedReports));
+      console.log('XML Report saved:', report);
       
       return report;
     } catch (error) {
@@ -52,6 +54,7 @@ export const reportService = {
       
       // Save to storage
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedReports));
+      console.log('HTML Report saved:', report);
       
       return report;
     } catch (error) {
@@ -67,18 +70,23 @@ export const reportService = {
    * @returns The parsed and saved TestReport
    */
   saveReport: (fileContent: string, fileName: string): TestReport => {
+    console.log(`Saving report from file: ${fileName}`);
     // Check file extension to determine the type
     const fileExt = fileName.split('.').pop()?.toLowerCase();
     
     if (fileExt === 'xml') {
+      console.log('Detected XML file');
       return reportService.saveXmlReport(fileContent);
     } else if (fileExt === 'html' || fileExt === 'htm') {
+      console.log('Detected HTML file');
       return reportService.saveHtmlReport(fileContent);
     } else {
       // Try to detect content type
       if (fileContent.trim().startsWith('<!DOCTYPE html>') || fileContent.trim().startsWith('<html')) {
+        console.log('Content detected as HTML');
         return reportService.saveHtmlReport(fileContent);
       } else if (fileContent.trim().startsWith('<?xml') || fileContent.trim().startsWith('<')) {
+        console.log('Content detected as XML');
         return reportService.saveXmlReport(fileContent);
       }
       
@@ -93,7 +101,9 @@ export const reportService = {
   getAllReports: (): TestReport[] => {
     try {
       const reportsJson = localStorage.getItem(STORAGE_KEY);
-      return reportsJson ? JSON.parse(reportsJson) : [];
+      const reports = reportsJson ? JSON.parse(reportsJson) : [];
+      console.log('Retrieved reports from localStorage:', reports);
+      return reports;
     } catch (error) {
       console.error('Error getting reports:', error);
       return [];
@@ -105,5 +115,6 @@ export const reportService = {
    */
   clearAllReports: (): void => {
     localStorage.removeItem(STORAGE_KEY);
+    console.log('All reports cleared from localStorage');
   }
 };

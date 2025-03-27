@@ -8,6 +8,10 @@ import { Trash2 } from 'lucide-react';
 import { reportService } from '../services/reportService';
 import { toast } from 'sonner';
 import { cn } from '../lib/utils';
+import PieChartDisplay from './PieChartDisplay';
+import FeatureBreakdown from './FeatureBreakdown';
+import FailureReasons from './FailureReasons';
+import TestReportCard from './TestReportCard';
 
 interface DashboardProps {
   className?: string;
@@ -15,7 +19,8 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ className }) => {
   const [reports, setReports] = useState<TestReport[]>([]);
-  const [selectedReportId, setSelectedReportId] = useState('');
+  const [selectedReportId, setSelectedReportId] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   
   useEffect(() => {
     // Load reports from storage
@@ -30,16 +35,26 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
   }, [reports, selectedReportId]);
   
   const loadReports = () => {
-    const storageReports = reportService.getAllReports();
-    setReports(storageReports);
-    
-    // Reset selected report if it no longer exists
-    if (storageReports.length > 0) {
-      if (!storageReports.some(report => report.id === selectedReportId)) {
-        setSelectedReportId(storageReports[0].id);
+    setIsLoading(true);
+    try {
+      console.log('Loading reports...');
+      const storageReports = reportService.getAllReports();
+      console.log('Reports loaded:', storageReports);
+      setReports(storageReports);
+      
+      // Reset selected report if it no longer exists
+      if (storageReports.length > 0) {
+        if (!storageReports.some(report => report.id === selectedReportId)) {
+          setSelectedReportId(storageReports[0].id);
+        }
+      } else {
+        setSelectedReportId('');
       }
-    } else {
-      setSelectedReportId('');
+    } catch (error) {
+      console.error('Error loading reports:', error);
+      toast.error('Failed to load reports');
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -58,6 +73,14 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
   
   const selectedReport = reports.find(report => report.id === selectedReportId);
   
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[300px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+  
   if (!selectedReport && reports.length === 0) {
     return (
       <div className={cn("p-6", className)}>
@@ -72,12 +95,25 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
           <FileUpload onReportAdded={handleReportAdded} />
           
           <div className="text-center text-sm text-muted-foreground">
-            <p>Upload your first XML report to get started</p>
+            <p>Upload your first XML or HTML report to get started</p>
           </div>
         </div>
       </div>
     );
   }
+  
+  // Prepare chart data for the selected report
+  const getChartData = () => {
+    if (!selectedReport) return [];
+    
+    const { summary } = selectedReport;
+    
+    return [
+      { name: 'Passed', value: summary.totalPassed, color: '#10b981' },
+      { name: 'Failed', value: summary.totalFailed, color: '#ef4444' },
+      { name: 'Skipped', value: summary.totalSkipped, color: '#f59e0b' },
+    ];
+  };
   
   return (
     <div className={cn("p-6", className)}>
@@ -104,21 +140,12 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
             
             <div className="space-y-3">
               {reports.map(report => (
-                <div 
+                <TestReportCard
                   key={report.id}
-                  className={cn(
-                    "p-3 rounded-lg border cursor-pointer transition-colors",
-                    selectedReportId === report.id 
-                      ? "bg-primary/10 border-primary" 
-                      : "hover:bg-muted border-transparent"
-                  )}
+                  report={report}
+                  isActive={selectedReportId === report.id}
                   onClick={() => setSelectedReportId(report.id)}
-                >
-                  <h3 className="font-medium truncate">{report.name}</h3>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {new Date(report.timestamp).toLocaleString()}
-                  </p>
-                </div>
+                />
               ))}
             </div>
           </div>
@@ -136,33 +163,22 @@ const Dashboard: React.FC<DashboardProps> = ({ className }) => {
               {/* Test Summary */}
               <TestSummary summary={selectedReport.summary} />
               
-              {/* Features */}
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold">Features</h2>
+              {/* Charts Section */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <PieChartDisplay 
+                  data={getChartData()} 
+                  title="Test Results" 
+                />
                 
-                {selectedReport.features.map(feature => (
-                  <div key={feature.id} className="border rounded-lg p-4">
-                    <h3 className="font-medium text-lg">{feature.name}</h3>
-                    <div className="flex gap-4 mt-2">
-                      <div className="text-sm">
-                        <span className="text-muted-foreground">Tests: </span>
-                        <span className="font-medium">{feature.totalTests}</span>
-                      </div>
-                      <div className="text-sm">
-                        <span className="text-muted-foreground">Passed: </span>
-                        <span className="font-medium text-green-500">{feature.passedTests}</span>
-                      </div>
-                      <div className="text-sm">
-                        <span className="text-muted-foreground">Failed: </span>
-                        <span className="font-medium text-red-500">{feature.failedTests}</span>
-                      </div>
-                      <div className="text-sm">
-                        <span className="text-muted-foreground">Skipped: </span>
-                        <span className="font-medium text-yellow-500">{feature.skippedTests}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                <FailureReasons 
+                  features={selectedReport.features} 
+                />
+              </div>
+              
+              {/* Features */}
+              <div className="mt-6">
+                <h2 className="text-xl font-semibold mb-4">Feature Details</h2>
+                <FeatureBreakdown features={selectedReport.features} />
               </div>
             </div>
           )}
