@@ -1,5 +1,5 @@
 
-import { TestReport, FeatureResult, TestCase } from '@/types/reportTypes';
+import { TestReport, FeatureResult, TestCase } from '../types/reportTypes';
 
 /**
  * Parses a Cucumber XML report into the application's TestReport format

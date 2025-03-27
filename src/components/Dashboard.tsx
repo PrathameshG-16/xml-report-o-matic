@@ -1,34 +1,26 @@
 
 import React, { useState, useEffect } from 'react';
 import TestSummary from './TestSummary';
-import FeatureBreakdown from './FeatureBreakdown';
-import FailureReasons from './FailureReasons';
-import PieChartDisplay from './PieChartDisplay';
-import TestReportCard from './TestReportCard';
 import FileUpload from './FileUpload';
-import { TestReport } from '@/types/reportTypes';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Button } from '@/components/ui/button';
+import { TestReport } from '../types/reportTypes';
+import { Button } from './ui/button';
 import { Trash2 } from 'lucide-react';
-import { reportService } from '@/services/reportService';
+import { reportService } from '../services/reportService';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn } from '../lib/utils';
 
 interface DashboardProps {
-  reports?: TestReport[];
   className?: string;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ reports: initialReports, className }) => {
-  const [reports, setReports] = useState<TestReport[]>(initialReports || []);
+const Dashboard: React.FC<DashboardProps> = ({ className }) => {
+  const [reports, setReports] = useState<TestReport[]>([]);
   const [selectedReportId, setSelectedReportId] = useState('');
   
   useEffect(() => {
-    // Load reports from storage if no initial reports provided
-    if (!initialReports || initialReports.length === 0) {
-      loadReports();
-    }
-  }, [initialReports]);
+    // Load reports from storage
+    loadReports();
+  }, []);
   
   useEffect(() => {
     // Select the first report by default when reports change
@@ -71,9 +63,9 @@ const Dashboard: React.FC<DashboardProps> = ({ reports: initialReports, classNam
       <div className={cn("p-6", className)}>
         <div className="max-w-3xl mx-auto space-y-8">
           <div className="text-center space-y-3">
-            <h1 className="text-2xl font-semibold">XML Report Visualizer</h1>
+            <h1 className="text-2xl font-semibold">Test Report Visualizer</h1>
             <p className="text-muted-foreground">
-              Upload your Cucumber XML reports to visualize test results
+              Upload your test reports to visualize results
             </p>
           </div>
           
@@ -87,37 +79,11 @@ const Dashboard: React.FC<DashboardProps> = ({ reports: initialReports, classNam
     );
   }
   
-  // Prepare data for charts if there's a selected report
-  let statusData: { name: string; value: number; color: string }[] = [];
-  let featureData: { name: string; value: number; color: string }[] = [];
-  
-  if (selectedReport) {
-    // Data for the status pie chart
-    statusData = [
-      { name: 'Passed', value: selectedReport.summary.totalPassed, color: 'hsl(var(--success))' },
-      { name: 'Failed', value: selectedReport.summary.totalFailed, color: 'hsl(var(--destructive))' },
-      { name: 'Skipped', value: selectedReport.summary.totalSkipped, color: 'hsl(var(--warning))' }
-    ];
-    
-    // Prepare data for features pie chart
-    featureData = selectedReport.features.map((feature, index) => {
-      // Create a palette of colors from blue to purple
-      const hue = 210 + (index * 20) % 60;
-      const color = `hsl(${hue}, 70%, 60%)`;
-      
-      return {
-        name: feature.name,
-        value: feature.totalTests,
-        color
-      };
-    });
-  }
-
   return (
     <div className={cn("p-6", className)}>
       <div className="space-y-6">
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Sidebar with test reports and upload */}
+          {/* Sidebar with upload */}
           <div className="w-full lg:w-64 flex-shrink-0 space-y-4">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold">Test Reports</h2>
@@ -136,18 +102,25 @@ const Dashboard: React.FC<DashboardProps> = ({ reports: initialReports, classNam
             
             <FileUpload onReportAdded={handleReportAdded} />
             
-            <ScrollArea className="h-[calc(100vh-16rem)]">
-              <div className="space-y-3 pr-4">
-                {reports.map(report => (
-                  <TestReportCard
-                    key={report.id}
-                    report={report}
-                    isActive={selectedReportId === report.id}
-                    onClick={() => setSelectedReportId(report.id)}
-                  />
-                ))}
-              </div>
-            </ScrollArea>
+            <div className="space-y-3">
+              {reports.map(report => (
+                <div 
+                  key={report.id}
+                  className={cn(
+                    "p-3 rounded-lg border cursor-pointer transition-colors",
+                    selectedReportId === report.id 
+                      ? "bg-primary/10 border-primary" 
+                      : "hover:bg-muted border-transparent"
+                  )}
+                  onClick={() => setSelectedReportId(report.id)}
+                >
+                  <h3 className="font-medium truncate">{report.name}</h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {new Date(report.timestamp).toLocaleString()}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
           
           {/* Main content area */}
@@ -163,22 +136,33 @@ const Dashboard: React.FC<DashboardProps> = ({ reports: initialReports, classNam
               {/* Test Summary */}
               <TestSummary summary={selectedReport.summary} />
               
-              {/* Charts Row */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <PieChartDisplay 
-                  data={statusData} 
-                  title="Test Status Distribution" 
-                />
-                <PieChartDisplay 
-                  data={featureData} 
-                  title="Tests by Feature" 
-                />
-              </div>
-              
-              {/* Feature breakdown and failure reasons */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <FeatureBreakdown features={selectedReport.features} />
-                <FailureReasons features={selectedReport.features} />
+              {/* Features */}
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold">Features</h2>
+                
+                {selectedReport.features.map(feature => (
+                  <div key={feature.id} className="border rounded-lg p-4">
+                    <h3 className="font-medium text-lg">{feature.name}</h3>
+                    <div className="flex gap-4 mt-2">
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">Tests: </span>
+                        <span className="font-medium">{feature.totalTests}</span>
+                      </div>
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">Passed: </span>
+                        <span className="font-medium text-green-500">{feature.passedTests}</span>
+                      </div>
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">Failed: </span>
+                        <span className="font-medium text-red-500">{feature.failedTests}</span>
+                      </div>
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">Skipped: </span>
+                        <span className="font-medium text-yellow-500">{feature.skippedTests}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}

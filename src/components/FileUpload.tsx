@@ -1,11 +1,11 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Upload, AlertCircle, Check } from 'lucide-react';
-import { reportService } from '@/services/reportService';
+import { Card, CardContent } from './ui/card';
+import { Button } from './ui/button';
+import { Upload, AlertCircle } from 'lucide-react';
+import { reportService } from '../services/reportService';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn } from '../lib/utils';
 
 interface FileUploadProps {
   onReportAdded: () => void;
@@ -32,8 +32,8 @@ const FileUpload: React.FC<FileUploadProps> = ({ onReportAdded, className }) => 
     // Check file extension
     const fileExt = file.name.split('.').pop()?.toLowerCase();
     
-    if (!fileExt || !(fileExt === 'xml' || fileExt === 'html' || fileExt === 'htm')) {
-      toast.error('Please upload an XML or HTML file');
+    if (!fileExt || fileExt !== 'xml') {
+      toast.error('Please upload an XML file');
       return;
     }
     
@@ -41,14 +41,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onReportAdded, className }) => 
     
     try {
       const fileContent = await file.text();
-      
-      // Process according to file type
-      if (fileExt === 'xml') {
-        reportService.saveXmlReport(fileContent);
-      } else {
-        reportService.saveHtmlReport(fileContent);
-      }
-      
+      reportService.saveXmlReport(fileContent);
       toast.success('Report uploaded successfully');
       onReportAdded();
     } catch (error) {
@@ -78,7 +71,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onReportAdded, className }) => 
   };
   
   return (
-    <Card className={cn("border-dashed animate-fade-in", isDragging ? "border-primary" : "border-muted-foreground/20", className)}>
+    <Card className={cn("border-dashed", isDragging ? "border-primary" : "border-muted-foreground/20", className)}>
       <CardContent>
         <div
           className={cn(
@@ -93,7 +86,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onReportAdded, className }) => 
           <input
             id="file-upload"
             type="file"
-            accept=".xml,.html,.htm"
+            accept=".xml"
             className="hidden"
             onChange={handleFileChange}
             disabled={isLoading}
@@ -117,7 +110,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onReportAdded, className }) => 
                   Drag and drop or click to browse
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Supports XML and HTML formats
+                  Supports XML format
                 </p>
               </div>
             </label>
